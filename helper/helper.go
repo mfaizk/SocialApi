@@ -44,18 +44,36 @@ func validateEmail(e string) error {
 	return nil
 }
 
+func checkDuplicateEmail(email string) bool {
+	filter := bson.M{"email": email}
+	cur, err := collection.Find(context.Background(), filter)
+	fatalErr(err)
+
+	if cur.TryNext(context.Background()) {
+		return false
+	}
+	defer cur.Close(context.Background())
+	return true
+
+}
 func AddUserToDB(u model.UserModel) string {
 	if validateEmail(u.Email) == nil {
-		passhash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.MinCost)
-		fatalErr(err)
-		u.Password = string(passhash)
-		collection.InsertOne(context.Background(), u)
-		return "nil"
+		if checkDuplicateEmail(u.Email) {
+			passhash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.MinCost)
+			fatalErr(err)
+			u.Password = string(passhash)
+			collection.InsertOne(context.Background(), u)
+			return "nil"
+		} else {
+			return "Duplicate email"
+		}
+
 	} else {
 		return validateEmail(u.Email).Error()
 	}
 
 }
+
 func AuthChecker(u model.UserModel) bool {
 	filter := bson.M{"email": u.Email}
 	cur, err := collection.Find(context.Background(), filter)

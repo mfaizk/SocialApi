@@ -14,6 +14,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	err := helper.AddUserToDB(usermodel)
 	if err == "nil" {
 		json.NewEncoder(w).Encode("user sucessfully added")
+	} else if err == "Duplicate email" {
+		json.NewEncoder(w).Encode("Email already exist in database")
 	} else {
 		json.NewEncoder(w).Encode(err)
 	}
